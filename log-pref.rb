@@ -74,6 +74,11 @@ def lookup_sub (name)
   json_content = fetch(url, "application/json")
   return nil if json_content == nil
 
+  if json_content == '{"NotFound": True}'
+    $lookup_table[name] = nil
+    return nil 
+  end
+
   json_props = JSON.parse(json_content)
   if json_props == nil or json_props["NotFound"] == true
     $lookup_table[name] = nil
@@ -220,36 +225,37 @@ csv_data.sort_by { |log| log['med'] }.each do |log|
         elsif amount_mg != nil and amount_mg != 0.0
           old = parse_measurement(route[:Dosage])
 
-          case old[:unit]
-          when "g"
-            old[:value] * 1000.0 if old[:value] != nil
-            old[:min] * 1000.0 if old[:min] != nil
-            old[:max] * 1000.0 if old[:max] != nil
-          when "mcg"
-            old[:value] / 1000.0 if old[:value] != nil
-            old[:min] / 1000.0 if old[:min] != nil
-            old[:max] / 1000.0 if old[:max] != nil
-          end
-
-          case old[:type]
-          when :single
-            if old[:value] < amount_mg.round(1)
-              route[:Dosage] = "#{old[:value].round(1).to_s.sub(/\.0$/, '')}-#{amount_mg.round(1).to_s.sub(/\.0$/, '')}mg"
-              puts "Adjusting dosage: #{route[:Name]}: #{route[:Dosage]}"
-            elsif old[:value] > amount_mg.round(1)
-              route[:Dosage] = "#{amount_mg.round(1).to_s.sub(/\.0$/, '')}-#{old[:value].round(1).to_s.sub(/\.0$/, '')}mg"
-              puts "Adjusting dosage: #{route[:Name]}: #{route[:Dosage]}"
+          if old != nil and old[:unit] != nil
+            case old[:unit]
+            when "g"
+              old[:value] * 1000.0 if old[:value] != nil
+              old[:min] * 1000.0 if old[:min] != nil
+              old[:max] * 1000.0 if old[:max] != nil
+            when "mcg"
+              old[:value] / 1000.0 if old[:value] != nil
+              old[:min] / 1000.0 if old[:min] != nil
+              old[:max] / 1000.0 if old[:max] != nil
             end
-          when :range
-            if old[:max] < amount_mg.round(1)
-              route[:Dosage] = "#{old[:min].round(1).to_s.sub(/\.0$/, '')}-#{amount_mg.round(1).to_s.sub(/\.0$/, '')}mg"
-              puts "Adjusting dosage: #{route[:Name]}: #{route[:Dosage]}"
-            elsif old[:min] > amount_mg.round(1)
-              route[:Dosage] = "#{amount_mg.round(1).to_s.sub(/\.0$/, '')}-#{old[:max].round(1).to_s.sub(/\.0$/, '')}mg"
-              puts "Adjusting dosage: #{route[:Name]}: #{route[:Dosage]}"
+
+            case old[:type]
+            when :single
+              if old[:value] < amount_mg.round(1)
+                route[:Dosage] = "#{old[:value].round(1).to_s.sub(/\.0$/, '')}-#{amount_mg.round(1).to_s.sub(/\.0$/, '')}mg"
+                puts "Adjusting dosage: #{route[:Name]}: #{route[:Dosage]}"
+              elsif old[:value] > amount_mg.round(1)
+                route[:Dosage] = "#{amount_mg.round(1).to_s.sub(/\.0$/, '')}-#{old[:value].round(1).to_s.sub(/\.0$/, '')}mg"
+                puts "Adjusting dosage: #{route[:Name]}: #{route[:Dosage]}"
+              end
+            when :range
+              if old[:max] < amount_mg.round(1)
+                route[:Dosage] = "#{old[:min].round(1).to_s.sub(/\.0$/, '')}-#{amount_mg.round(1).to_s.sub(/\.0$/, '')}mg"
+                puts "Adjusting dosage: #{route[:Name]}: #{route[:Dosage]}"
+              elsif old[:min] > amount_mg.round(1)
+                route[:Dosage] = "#{amount_mg.round(1).to_s.sub(/\.0$/, '')}-#{old[:max].round(1).to_s.sub(/\.0$/, '')}mg"
+                puts "Adjusting dosage: #{route[:Name]}: #{route[:Dosage]}"
+              end
             end
           end
-
         end
         route_set = true
       end
