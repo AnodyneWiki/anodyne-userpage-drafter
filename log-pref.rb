@@ -90,7 +90,7 @@ def lookup_sub (name)
   return json_props["Title"]
 end
 
-tried_titles = []
+$tried_titles = []
 
 def load_prefs (prefs_path)
   prefs = File.read(prefs_path)
@@ -99,6 +99,9 @@ def load_prefs (prefs_path)
   prefs_props = JSON.parse(prefs)
   return {} if prefs_props == nil
 
+  for sub in prefs_props["TriedSubstances"]
+    $tried_titles << sub["Name"]
+  end
   return prefs_props
 end
 
@@ -174,8 +177,8 @@ csv_data.sort_by { |log| log['med'] }.each do |log|
     end
   end
 
-  if title != nil and !tried_titles.include?(title)
-    tried_titles << title
+  if title != nil and not $tried_titles.include?(title)
+    $tried_titles << title
     puts "Adding: #{title}"
 
     prefs["TriedSubstances"] = Array.new if prefs["TriedSubstances"] == nil
