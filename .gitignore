@@ -1,0 +1,4 @@
+*.json
+!example_prefs.json
+result
+.direnv

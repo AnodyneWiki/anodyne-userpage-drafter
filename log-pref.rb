@@ -1,7 +1,8 @@
 require 'csv'
 require 'json'
 require "optparse"
-require 'httparty'
+require 'net/http'
+require 'uri'
 
 ANODYNE_URL = "https://anodyne.wiki/"
 
@@ -56,12 +57,22 @@ def encode_symbols(input)
   return input.gsub("α", "%CE%B1").gsub("Α", "%CE%B1").gsub("β", "%CE%B2").gsub("Β", "%CE%B2").gsub("Γ", "%CE%B3").gsub("γ", "%CE%B3").gsub("Δ", "%CE%94").gsub("δ", "%CE%B4").gsub("(", "%28").gsub(")", "%29").gsub("'", "%27")
 end
 
-def fetch(url, accept)
-  response = HTTParty.get(encode_symbols(url.gsub(" ", "%20")), timeout: 50, headers: { "accept" => accept} )
+def fetch(url_string, accept)
+  uri = URI(encode_symbols(url_string.gsub(" ", "%20")))
+  request = Net::HTTP::Get.new(uri)
+  request["accept"] = accept
 
-  return nil if response.code != 200
+  begin
+    response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: uri.scheme == 'https', read_timeout: 50) do |http|
+      http.request(request)
+    end
 
-  return response.body
+    return nil if response.code.to_i != 200
+
+    return response.body
+  rescue StandardError => e
+    return nil
+  end
 end
 
 def lookup_sub (name)
@@ -93,6 +104,7 @@ end
 $tried_titles = []
 
 def load_prefs (prefs_path)
+  return {} unless File.exist?(prefs_path)
   prefs = File.read(prefs_path)
   return {} if prefs == nil
 
